@@ -1,37 +1,21 @@
 const fetch = require('node-fetch');
-const pluralize = require('pluralize');
 const camelcaseKeysDeep = require('camelcase-keys-deep');
-
-// REST real data
-// const url = {
-//   AUTH: 'http://auth.test',
-//   FOLIO: 'http://folio.test',
-//   ROLODEX: 'http://rolodex.test',
-// }
-
-// Test ENV Tokens
-// const token = {
-//   AUTH: 'auth',
-//   FOLIO: 'folio',
-//   ROLODEX: 'rolodex',
-// };
+const decamelizeKeysDeep = require('decamelize-keys-deep');
 
 function jasonify(res) {
   return res.json();
 }
 
-function camelizeify(res, key) {
-  const pluralKey = pluralize.plural(key);
-
-  if (Array.isArray(res[pluralKey])) {
-    return res[pluralKey].map((key) => camelizeKeys(key))
+function camelizeify(res, dataKey) {
+  if (Array.isArray(res[dataKey])) {
+    return res[dataKey].map(key => camelcaseKeysDeep(key))
   } else {
-    return camelizeKeys(res[pluralKey])
+    return camelcaseKeysDeep(res[dataKey]);
   }
 }
 
-function tranformify(res, key) {
-  return jasonify(res).then(res => camelizeify(res, key));
+function transformify(res, dataKey) {
+  return jasonify(res).then(res => camelizeify(res, dataKey));
 }
 
 function datafy(token, method, body) {
@@ -46,51 +30,40 @@ function datafy(token, method, body) {
   }
 };
 
-function get({ url, key, token }) {
-  return fetch(url, datafy(token, 'GET')).then(res => tranformify(res, key));
+function get({ url, dataKey, token }) {
+  // TODO: responses
+  return fetch(url, datafy(token, 'GET')).then(res => transformify(res, dataKey));
 };
 
-function post({ url, key, data, token }) {
-  const body = JSON.stringify(underscoreizeKeys(data));
-
-  return fetch(url, datafy(token, 'POST', body)).then(res => tranformify(res, key));
+function post({ url, dataKey, data, token }) {
+  const body = JSON.stringify(decamelizeKeysDeep(data));
+  // TODO: responses
+  return fetch(url, datafy(token, 'POST', body)).then(res => transformify(res, dataKey));
 };
 
 module.exports = class Restbound {
-  constructor({ endpoint, key, service }) {
-    this.endpoint = endpoint;
-    this.key = key;
-    this.service = toUpper(service);
+  constructor(config = {}) {
+    this.api = config.api;
+    this.endpoint = config.endpoint;
+    this.dataKey = config.dataKey || config.endpoint;
+    this.token = config.token;
+    this.url = (config.api && config.endpoint) ? `${config.api}/${config.endpoint}` : (config.api || config.endpoint);
   }
 
-  get(id) {
-    const options = {
-      key: this.key,
-      token: token[this.service],
-      url: id ? `${url[this.service]}/${this.endpoint}/${id}` : `${url[this.service]}/${this.endpoint}`,
+  options(options = {}) {
+    return {
+      data: options.data,
+      dataKey: options.dataKey || this.dataKey,
+      token: options.token || this.token,
+      url: options.url || options.id ? `${this.url}/${options.id}` : this.url,
     };
-
-    return get(options);
   }
 
-  getLink(link) {
-    const options = {
-      key: this.key,
-      token: token[this.service],
-      url: link,
-    };
-
-    return get(options);
+  get(options = {}) {
+    return get(this.options({ id: options.id, url: options.url }));
   }
 
-  post(data) {
-    const options = {
-      data,
-      key: this.key,
-      token: token[this.service],
-      url: `${url[this.service]}/${this.endpoint}`,
-    };
-
-    return post(options);
+  post(options = {}) {
+    return post(this.options({ data: options.data, url: options.url }));
   }
 }
