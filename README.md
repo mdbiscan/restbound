@@ -1,2 +1,2 @@
 # restbound
-A node-fetch wrapper for JASONAPI over REST endpoints.
+A node-fetch wrapper for REST endpoints returning JSONAPI.

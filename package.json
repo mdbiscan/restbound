@@ -1,0 +1,27 @@
+{
+  "name": "restbound",
+  "version": "1.0.0",
+  "description": "A node-fetch wrapper for JASONAPI over REST endpoints.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "ajax",
+    "api",
+    "fetch",
+    "json",
+    "jsonapi",
+    "node",
+    "node-fetch",
+    "rest"
+  ],
+  "author": "M. Biscan",
+  "license": "MIT",
+  "dependencies": {
+    "camelcase-keys-deep": "^0.1.0",
+    "decamelize-keys-deep": "^0.1.1",
+    "node-fetch": "^2.1.2",
+    "pluralize": "^7.0.0"
+  }
+}
