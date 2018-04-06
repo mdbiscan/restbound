@@ -1,6 +1,8 @@
 # restbound
 A node-fetch wrapper for REST endpoints returning JSONAPI. `Restbound` is a JS Class, each instantiation points towards an endpoint. 
 
+See `node-fetch` for more info and API: https://www.npmjs.com/package/node-fetch
+
 ## Installation
 `npm install restbound --save`
 
@@ -12,8 +14,7 @@ A node-fetch wrapper for REST endpoints returning JSONAPI. `Restbound` is a JS C
 1. `node-fetch` error handling
 1. Post/Patch/Put options
 
-# Configuration & Setup
-## Example
+## Configuration & Setup
 ```javascript
 const config = {
   api: 'http://yourapp.com',
@@ -28,28 +29,55 @@ restbound.get();
 restbound.get({ id });
 resetbound.post({ data });
 ```
-# API
+
+## API
 Configuration|Usage
 ------------ | -------------
-api|Url for your API
-endpoint|The name of the rest Endpoint
-dataKey|Key for JSON array. This is optional. If you do not set a dataKey, Restbound will assume it's the same as your endpoint.
-token|Authorization token
-url|Private field built in the class constructor. Is either a combination of the `api` and `endpoint` configurations, or is the `api` configuration if no `endpoint` exists. For instance, `api` could be a wholly constructed URL including the endpoint from a link path.
+api|Url for your API.
+endpoint|The name of the rest endpoint.
+dataKey|_Optional._ Key for JSON array. If you do not set a dataKey, Restbound will assume it's the same as `endpoint`.
+token|Authorization token. If you do not wish to customize `config.headers`, you can just set the token instead.
+url|_Private._ Built in the class constructor. Is either a combination of the `api` and `endpoint` configurations, or is the `api` configuration if no `endpoint` exists. For instance, `api` could be a wholly constructed URL including the endpoint from a link path.
+headers|_Optional._ Sets up `node-fetch` headers.
 
-# Public Methods
+## node-fetch API Support
+`Restbound` will set `Accept` and `Content-Type` as `application/json` by default. You can override it via `config.headers`.
+
 ## get
-### Examples
+Params|Usage
+------------ | -------------
+id|Optional. Passing an `id` will get one object returned, else all objects are returned.
+url|Override the initially constructed URL. See `url` in the API configuration table.
+
 ```javascript
-const accountBound = new Restbound({
+const userBound = new Restbound({
   api: 'http://myapp',
-  endpoint: 'accounts',
+  endpoint: 'users',
   token: 'mytoken',
 });
 
-accountBound.get();
+userBound.get();
 ```
-#### BankAccounts from Accounts
+
+#### Returns
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Bob",
+      "lastName": "Balaban"
+    },
+    {
+      "id": 2,
+      "firstName": "Bob",
+      "lastName": "Weston"
+    }
+  ]
+}
+```
+
+#### Example: Embedded Resources
 ```javascript
 const bankAccountBound = new Restbound({
   api: 'http://myapp',
@@ -60,24 +88,32 @@ const bankAccountBound = new Restbound({
 
 bankAccountBound.get();
 ```
-Params|Usage
------------- | -------------
-id|Optional. Passing an `id` will get one object returned, else all objects are returned.
-url|Override the initially constructed URL. See `url` in the API configuration table.
-## put
-```javascript
-const data = {
-  bankAccounts: {
-    accountNumber: 555555555,
-    bankAccountType: 'checking',
-    bankPaymentType: 'ach',
-    routingNumber: 123456789,
-  },
-};
 
-accountBound.post({ data });
-```
+## put
 Params|Usage
 ------------ | -------------
 data|Object of key/value pairs.
 url|Override the initially constructed URL. see `url` in the API configuration table.
+
+```javascript
+const body = {
+  bankAccounts: {
+    accountNumber: 555555555,
+    bankAccountType: 'checking',
+    routingNumber: 123456789,
+  },
+};
+
+accountBound.post({ body });
+```
+
+#### Sends
+```json
+{
+  "bank_accounts": {
+    "account_number": 555555555,
+    "bank_account_type": "checking",
+    "routing_number": 123456789
+  }
+}
+```

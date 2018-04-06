@@ -2,6 +2,11 @@ const fetch = require('node-fetch');
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 const decamelizeKeysDeep = require('decamelize-keys-deep');
 
+const method = {
+  GET: 'GET',
+  POST: 'POST',
+};
+
 function jasonify(res) {
   return res.json();
 }
@@ -18,52 +23,52 @@ function transformify(res, dataKey) {
   return jasonify(res).then(res => camelizeify(res, dataKey));
 }
 
-function datafy(token, method, body) {
-  return {
-    body,
-    method,
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  }
-};
-
-function get({ url, dataKey, token }) {
-  // TODO: responses
-  return fetch(url, datafy(token, 'GET')).then(res => transformify(res, dataKey));
-};
-
-function post({ url, dataKey, data, token }) {
-  const body = JSON.stringify(decamelizeKeysDeep(data));
-  // TODO: responses
-  return fetch(url, datafy(token, 'POST', body)).then(res => transformify(res, dataKey));
-};
+function _fetch(url, options, dataKey) {
+  return fetch(url, options).then(res => transformify(res, dataKey));
+}
 
 module.exports = class Restbound {
   constructor(config = {}) {
+    const headers = config.headers || {};
+
+    this.headers = new fetch.Headers({
+      'Accept': headers.accept || '*/*',
+      'Accept-Encoding': headers.acceptEncoding || 'application/json',
+      'Authorization': `Bearer ${config.token}` || headers.authorization,
+      'Connection': headers.connection || 'close',
+      'Content-Type': headers.contentType || 'application/json',
+      'User-Agent': headers.userAgent || 'node-fetch/1.0 (+https://github.com/bitinn/node-fetch)',
+    });
+
+    this.fetchOptions = {
+      agent: config.agent || null,
+      compress: config.compress || true,
+      follow: config.follow || 20,
+      headers: this.headers,
+      redirect: config.redirect || 'follow',
+      size: config.size || 0,
+      timeout: config.timeout || 0,
+    };
+
     this.api = config.api;
     this.endpoint = config.endpoint;
     this.dataKey = config.dataKey || config.endpoint;
-    this.token = config.token;
-    this.url = (config.api && config.endpoint) ? `${config.api}/${config.endpoint}` : (config.api || config.endpoint);
+    this.url = (config.api && config.endpoint) ? `${config.api}/${config.endpoint}` : config.api;
   }
 
-  options(options = {}) {
-    return {
-      data: options.data,
-      dataKey: options.dataKey || this.dataKey,
-      token: options.token || this.token,
-      url: options.url || options.id ? `${this.url}/${options.id}` : this.url,
-    };
+  get(config = { /* url, id */ }) {
+    const options = Object.assign(this.fetchOptions, { method: method.GET });
+    let url = config.url || this.url;
+    url = config.id ? `${url}/${config.id}` : url;
+
+    return _fetch(url, options, this.dataKey);
   }
 
-  get(options = {}) {
-    return get(this.options({ id: options.id, url: options.url }));
-  }
+  post(config = { /* url, body */ }) {
+    const body = JSON.stringify(decamelizeKeysDeep(config.body));
+    const options = Object.assign(this.fetchOptions, { method: method.POST, body });
+    const url = config.url || this.url;
 
-  post(options = {}) {
-    return post(this.options({ data: options.data, url: options.url }));
+    return _fetch(url, options, this.dataKey);
   }
 }
