@@ -56,18 +56,18 @@ module.exports = class Restbound {
     this.url = (config.api && config.endpoint) ? `${config.api}/${config.endpoint}` : config.api;
   }
 
-  get(config = { /* url, id */ }) {
+  get(params = {}) {
     const options = Object.assign(this.fetchOptions, { method: method.GET });
-    let url = config.url || this.url;
-    url = config.id ? `${url}/${config.id}` : url;
+    let url = params.url || this.url;
+    url = params.id ? `${url}/${params.id}` : url;
 
     return _fetch(url, options, this.dataKey);
   }
 
-  post(config = { /* url, body */ }) {
-    const body = JSON.stringify(decamelizeKeysDeep(config.body));
+  post(params = {}) {
+    const body = JSON.stringify(decamelizeKeysDeep(params.body));
     const options = Object.assign(this.fetchOptions, { method: method.POST, body });
-    const url = config.url || this.url;
+    const url = params.url || this.url;
 
     return _fetch(url, options, this.dataKey);
   }
